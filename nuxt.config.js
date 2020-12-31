@@ -25,7 +25,8 @@ export default {
     '@/plugins/antd-ui',
     '@/plugins/lazy-load',
     '@/plugins/generate-url',
-    { src: '@/plugins/qr', mode: 'client' }
+    { src: '@/plugins/qr', mode: 'client' },
+    { src: '@/plugins/debounce', mode: 'client' }
   ],
 
   // Auto import components (https://go.nuxtjs.dev/config-components)

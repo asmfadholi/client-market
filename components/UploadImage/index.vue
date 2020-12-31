@@ -37,6 +37,16 @@ export default {
       reader.readAsDataURL(img)
     },
 
+    reset () {
+      this.status = ''
+      this.image = ''
+    },
+
+    setImage (img) {
+      this.image = img
+      this.status = 'done'
+    },
+
     beforeUpload (file) {
       const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png'
       if (!isJpgOrPng) {

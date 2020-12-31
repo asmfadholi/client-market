@@ -1,7 +1,7 @@
 <template>
   <a-table :columns="columns" :data-source="data" row-key="id" :scroll="scroll" :loading="loading">
     <span slot="image" slot-scope="image">
-      <image v-lazy="image" />
+      <img v-lazy="checkImage(image)" width="30px" height="30px" style="border-radius: 5px; object-fit: cover">
     </span>
     <div slot="price" slot-scope="price" style="text-align: right">
       {{ `${price}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') }}
@@ -12,9 +12,9 @@
       style="display: flex; justify-content: center; cursor: pointer; font-size: 20px"
     >
       <a-space size="middle">
-        <nuxt-link :to="`/product/${row.id}`">
+        <a @click="onEdit(row)">
           <a-icon type="form" style="color: #1890ff; font-size: 15px" />
-        </nuxt-link>
+        </a>
         <a-popconfirm placement="topLeft" ok-text="Yes" cancel-text="No" @confirm="confirm(row)">
           <template slot="title">
             <p>Apa kamu yakin ingin delete produk ini?</p>
@@ -38,7 +38,7 @@ const columns = [
   },
   {
     title: 'Nama Produk',
-    dataIndex: 'name',
+    dataIndex: 'uniqueName',
     key: 'name',
     fixed: 'left'
   },
@@ -80,6 +80,16 @@ export default {
     }
   },
   methods: {
+    onEdit (row) {
+      this.$emit('onEdit', row)
+    },
+    setLoading (val) {
+      this.loading = val
+    },
+    checkImage (img) {
+      const { url = '' } = img || {}
+      return this.$generateUrl(url || '')
+    },
     async doDeleteProduct (val) {
       this.loading = true
       try {
@@ -92,7 +102,9 @@ export default {
       } catch (err) {
         this.$message.error('Maaf gagal menghapus produk, silahkan coba lagi')
       } finally {
-        this.loading = false
+        setTimeout(() => {
+          this.loading = false
+        }, 300)
       }
     },
     confirm (val) {

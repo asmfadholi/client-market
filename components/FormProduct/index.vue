@@ -35,13 +35,19 @@
       </a-col>
     </a-row>
 
-    <a-form-model-item ref="image" label="Foto Produk" prop="image">
-      <UploadImage @uploaded="uploaded" />
-    </a-form-model-item>
+    <a-collapse v-model="collapse" expand-icon-position="right" style="margin-bottom: 24px">
+      <a-collapse-panel key="1" header="Foto Produk">
+        <div>
+          <a-form-model-item ref="image" prop="image">
+            <UploadImage ref="uploadImagerRef" @uploaded="uploaded" />
+          </a-form-model-item>
+        </div>
+      </a-collapse-panel>
+    </a-collapse>
 
     <a-form-model-item>
       <a-button type="primary" :loading="loadingForm" @click="onSubmit">
-        Tambahkan
+        {{ dataEdit ? 'Edit' : 'Tambahkan' }}
       </a-button>
       <a-popconfirm placement="top" ok-text="Yes" cancel-text="No" @confirm="resetForm">
         <template slot="title">
@@ -58,20 +64,21 @@
 <script>
 import Vue from 'vue'
 import UploadImage from '@/components/UploadImage'
-import { createProduct } from '@/api/product'
+import { createProduct, editProduct } from '@/api/product'
 
 export default Vue.extend({
   components: {
     UploadImage
   },
   props: {
-    model: {
-      type: String,
-      default: ''
+    dataEdit: {
+      type: Object,
+      default: null
     }
   },
   data () {
     return {
+      collapse: ['1'],
       countTrain: 5,
       currentStream: '',
       label: '',
@@ -101,6 +108,22 @@ export default Vue.extend({
       }
     }
   },
+  watch: {
+    dataEdit (newVal) {
+      if (newVal) {
+        this.form = { ...newVal, image: null }
+        const { image = {} } = newVal
+        this.$refs.uploadImagerRef.setImage(this.$generateUrl(image?.url || ''))
+      }
+    }
+  },
+  mounted () {
+    if (this.dataEdit) {
+      this.form = { ...this.dataEdit, image: null }
+      const { image = {} } = this.dataEdit
+      this.$refs.uploadImagerRef.setImage(this.$generateUrl(image?.url || ''))
+    }
+  },
   methods: {
 
     uploaded (val) {
@@ -115,7 +138,6 @@ export default Vue.extend({
           axios: this.$axios,
           req
         })
-        this.loadingForm = false
         this.$message.success('Berhasil menambah produk')
         this.form = {
           name: null,
@@ -123,6 +145,7 @@ export default Vue.extend({
           image: null,
           unit: 'eceran'
         }
+        this.$refs.uploadImagerRef.reset()
       } catch (err) {
         this.$message.error('Gagal menambah produk, silahkan coba lagi')
       } finally {
@@ -130,12 +153,37 @@ export default Vue.extend({
       }
     },
 
+    async editProduct () {
+      this.loadingForm = true
+      const req = this.generateDataProduct()
+      try {
+        await editProduct({
+          axios: this.$axios,
+          req,
+          id: this.form?.id || 0
+        })
+        this.$message.success('Berhasil edit produk')
+        this.form = {
+          name: null,
+          price: null,
+          image: null,
+          unit: 'eceran'
+        }
+        this.$refs.uploadImagerRef.reset()
+        this.$emit('onEdited')
+      } catch (err) {
+        this.$message.error('Gagal edit produk, silahkan coba lagi')
+      } finally {
+        this.loadingForm = false
+      }
+    },
+
     generateDataProduct () {
       const formData = new FormData()
-      const { image = {}, name = '', price = 0, unit = '' } = this.form
+      const { image = {}, name = '', price = 0, unit = '', id = null } = this.form
       const { originFileObj = '' } = image || {}
-      const newName = `${name} - ${unit}`
-      const dataBody = { name: newName, price, unit }
+      const uniqueName = `${name} - ${unit}`
+      const dataBody = { name, price, unit, uniqueName, id }
       if (originFileObj) {
         formData.append('files.image', originFileObj)
       }
@@ -146,7 +194,11 @@ export default Vue.extend({
     onSubmit () {
       this.$refs.ruleForm.validate((valid) => {
         if (valid) {
-          this.createProduct()
+          if (this.dataEdit) {
+            this.editProduct()
+          } else {
+            this.createProduct()
+          }
         } else {
           return this.$message.error('Silahkan lengkapi data terlebih dahulu')
         }
@@ -155,6 +207,7 @@ export default Vue.extend({
 
     resetForm () {
       this.$refs.ruleForm.resetFields()
+      this.$refs.uploadImagerRef.reset()
     }
   }
 })

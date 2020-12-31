@@ -9,25 +9,49 @@
       </h1>
     </div>
     <a-divider />
-    <div style="display: flex; justify-content: flex-end; margin: 20px 0px">
-      <nuxt-link to="/product/add">
-        <a-button type="primary" icon="plus-circle" size="default">
-          Tambah Produk
-        </a-button>
-      </nuxt-link>
-    </div>
-    <TableProduct :data="products || productList" :loading="loading" @onDeleted="onDeleted" />
+    <a-row style="margin: 0px 0px 20px">
+      <a-col :span="12">
+        <a-input
+          v-model="search"
+          v-debounce="doSearch"
+          placeholder="Cari Produk"
+        />
+      </a-col>
+      <a-col :span="12">
+        <div style="display: flex; justify-content: flex-end;">
+          <nuxt-link to="/product/add">
+            <a-button type="primary" icon="plus-circle" size="default">
+              Tambah Produk
+            </a-button>
+          </nuxt-link>
+        </div>
+      </a-col>
+    </a-row>
+
+    <TableProduct ref="tableProduct" :data="products || productList" @onDeleted="onDeleted" @onEdit="onEdit" />
+    <a-modal
+      class="modal-style"
+      :mask-closable="false"
+      title="Edit Produk"
+      :visible="visible"
+      :footer="null"
+      @cancel="onCancel"
+    >
+      <FormProduct :data-edit="dataEdit" @onEdited="onEdited" />
+    </a-modal>
   </div>
 </template>
 
 <script>
 import Vue from 'vue'
 import TableProduct from '@/components/TableProduct'
-import { getProduct } from '@/api/product'
+import FormProduct from '@/components/FormProduct'
+import { getProduct, getProductByFilter } from '@/api/product'
 
 export default Vue.extend({
   components: {
-    TableProduct
+    TableProduct,
+    FormProduct
   },
   async asyncData ({ $axios, redirect }) {
     try {
@@ -42,16 +66,47 @@ export default Vue.extend({
   data () {
     return {
       products: null,
+      visible: false,
+      search: '',
+      dataEdit: null,
       loading: false
     }
   },
   methods: {
+    onEdited () {
+      this.onCancel()
+      this.doSearch()
+    },
+    onCancel () {
+      this.visible = false
+      this.dataEdit = null
+    },
     async onDeleted () {
       try {
         const res = await getProduct({ axios: this.$axios })
         this.products = res
       } catch (err) {
         this.$message.error('Maaf gagal perbaharui produk, silahkan refresh page')
+      }
+    },
+    onEdit (row) {
+      this.dataEdit = row
+      this.visible = true
+    },
+    async doSearch () {
+      let products = []
+      try {
+        this.$refs.tableProduct.setLoading(true)
+        const req = { uniqueName_contains: this.search }
+        const res = await getProductByFilter({ axios: this.$axios, req })
+        products = res
+      } catch (err) {
+        this.$message.error('Maaf gagal perbaharui produk, silahkan refresh page')
+      } finally {
+        setTimeout(() => {
+          this.products = products
+          this.$refs.tableProduct.setLoading(false)
+        }, 300)
       }
     }
   }
