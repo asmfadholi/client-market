@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="form-transaction-component">
     <a-form-model
       ref="ruleForm"
       :model="form"
@@ -11,6 +11,55 @@
           v-model="form.name"
           placeholder="Tulis Nama"
         />
+      </a-form-model-item>
+      <a-form-model-item label="Cari Produk di sini">
+        <div style="display: flex; justify-content: center">
+          <a-space size="middle">
+            <a-button
+              type="danger"
+              shape="circle"
+              icon="minus"
+              size="medium"
+              :disabled="count === 1"
+              @click="count--"
+            />
+            <span>{{ count }}</span>
+            <a-button type="primary" shape="circle" icon="plus" size="medium" @click="count++" />
+          </a-space>
+        </div>
+        <div class="add-product">
+          <a-row>
+            <a-col :sm="24" :md="20" style="margin-bottom: 10px">
+              <a-select
+                v-model="search"
+                v-debounce="doSearch"
+                class="select-product"
+                show-search
+                placeholder="Cari produk disini"
+                style="width: 100%; height: 60px"
+                :default-active-first-option="false"
+                :show-arrow="false"
+                :filter-option="false"
+                not-found-content="Produk tidak ditemukan"
+                @search="onChangeSearch"
+              >
+                <a-select-option v-for="d in productOptions" :key="JSON.stringify(d)">
+                  <a-space size="middle">
+                    <img v-lazy="checkImage(d.image)" height="50px" width="50px" style="object-fit: cover; border-radius: 5px">
+                    <span>
+                      {{ d.uniqueName }}
+                    </span>
+                  </a-space>
+                </a-select-option>
+              </a-select>
+            </a-col>
+            <a-col :sm="24" :md="4">
+              <a-button type="primary" size="medium" style="margin: 0px; width: 100%; height: 60px" @click="addProduct">
+                Add
+              </a-button>
+            </a-col>
+          </a-row>
+        </div>
       </a-form-model-item>
 
       <div v-if="transactions.length > 0">
@@ -36,70 +85,13 @@
           </a-button>
         </a-popconfirm>
       </a-form-model-item>
-      <a-modal
-        v-if="visible"
-        class="modal-style"
-        :mask-closable="false"
-        title="Scan Produkmu"
-        :visible="visible"
-        @cancel="onCancel"
-      >
-        <div>
-          <qrcode-stream ref="videoStream" :style="{ display: capturing ? 'none': 'block' }" @init="onInit">
-            <div v-if="loadingInit" style="display: flex; justify-content: center; align-items: center; height: 100%">
-              <a-icon type="loading" style="font-size: 30px" />
-            </div>
-          </qrcode-stream>
-          <div v-if="capturing" :style="{ height: `${offsetVideo}px`, width: '100%', background: '#efefef' }" />
-        </div>
-        <div slot="footer" style="display: flex; justify-content: center">
-          <a-button size="large" :loading="loadingModel" @click="predictProduct">
-            Scan
-          </a-button>
-        </div>
-        <a-modal
-          v-if="isSetProduk"
-          class="modal-style"
-          :mask-closable="false"
-          :title="currentProduct.name"
-          :visible="isSetProduk"
-          @cancel="isSetProduk = !isSetProduk"
-        >
-          <div style="text-align: center">
-            <img
-              v-lazy="$generateUrl(currentProduct.image.url)"
-              style="height: 150px; width: 150px; object-fit: cover; border-radius: 5px; margin-top: 10px"
-            >
-            <h3><b>{{ currentProduct.name }}</b></h3>
-            {{ `Rp. ${currentProduct.price}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') }} / satuan
-          </div>
-          <div>
-            <a-input-number
-              v-model="form.count"
-              style="width: 100%; margin-top: 20px"
-              :min="1"
-            />
-          </div>
-
-          <div slot="footer" style="display: flex; justify-content: center">
-            <a-button size="large" :disabled="!form.count > 0" @click="addProduct">
-              Tambahkan
-            </a-button>
-          </div>
-        </a-modal>
-      </a-modal>
     </a-form-model>
-    <div v-if="showScan" class="navigation-bottom">
-      <div class="wrapper" @click="openScanner">
-        SCAN
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
 import Vue from 'vue'
-import { getProductDetail } from '@/api/product'
+import { getProductDetail, getProductByFilter } from '@/api/product'
 import { createTransaction } from '@/api/transaction'
 import TableItem from '@/components/TableItem'
 
@@ -115,17 +107,20 @@ export default Vue.extend({
   },
   data () {
     return {
+      count: 1,
       showScan: false,
       countTrain: 5,
       currentStream: '',
       label: '',
+      querySearch: '',
       transactions: [],
-      productList: {},
+      productOptions: [],
       currentProduct: null,
       isSetProduk: false,
       offsetVideo: 0,
       loadingScan: false,
       predict: '',
+      search: '',
       capturing: false,
       visible: false,
       loadingForm: false,
@@ -140,11 +135,36 @@ export default Vue.extend({
       }
     }
   },
+  created () {
+    this.doSearch()
+  },
   methods: {
     addProduct () {
-      const { name = '', price = 0 } = this.currentProduct
-      this.transactions.push({ productName: name, price: Number(price), count: this.form.count, __component: 'transaction.transaction' })
-      this.isSetProduk = false
+      const { name = '', price = 0 } = JSON.parse(this.search) || {}
+      this.transactions.push({ productName: name, price: Number(price), count: this.count, __component: 'transaction.transaction' })
+      this.search = ''
+      this.count = 1
+    },
+
+    onChangeSearch (val) {
+      this.querySearch = val
+    },
+
+    checkImage (img) {
+      const { url = '' } = img || {}
+      return this.$generateUrl(url || '')
+    },
+
+    async doSearch () {
+      // let products = []
+      try {
+        const req = { uniqueName_contains: this.querySearch, _limit: 20 }
+        const res = await getProductByFilter({ axios: this.$axios, req })
+        this.productOptions = res
+        // products = res
+      } catch (err) {
+        this.$message.error('Maaf gagal perbaharui produk, silahkan refresh page')
+      }
     },
 
     async doGetProduct (val) {
@@ -246,32 +266,19 @@ export default Vue.extend({
 })
 </script>
 
-<style lang="scss" scoped>
-.navigation-bottom {
-  position: fixed;
-    bottom: 0px;
-    left: 0px;
-    background: #fff;
-    z-index: 20;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    height: 56px;
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
-    .wrapper {
-      top: -45px;
-      position: relative;
-      height: 100px;
-      background: #36a9e1;
-      color: #fff;
-      font-weight: bold;
-      width: 100px;
-      box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
-      border-radius: 100px;
-      text-align: center;
-      align-items: center;
-      display: flex;
-      justify-content: center;
+<style lang="scss">
+.form-transaction-component {
+  .add-product .ant-space {
+    width: 100% !important;
+    .ant-space-item:first-child {
+      width: 100% !important;
     }
+  }
+  .add-product .select-product .ant-select-selection--single {
+    height: 60px !important;
+    .ant-select-selection__rendered {
+      margin-top: 4px !important;
+    }
+  }
 }
 </style>

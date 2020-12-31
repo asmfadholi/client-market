@@ -5,6 +5,6 @@ Vue.use(vueDebounce)
 
 // Or if you want to pass in the lock option
 Vue.use(vueDebounce, {
-  listenTo: ['input', 'keyup', 'change'],
+  listenTo: ['input', 'keyup', 'change', 'select'],
   defaultTime: '400ms'
 })

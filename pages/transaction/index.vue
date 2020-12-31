@@ -46,14 +46,14 @@ export default Vue.extend({
     }
   },
   methods: {
-    // async onDeleted () {
-    //   try {
-    //     const res = await getProduct({ axios: this.$axios })
-    //     this.products = res
-    //   } catch (err) {
-    //     this.$message.error('Maaf gagal perbaharui produk, silahkan refresh page')
-    //   }
-    // }
+    async onDeleted () {
+      try {
+        const res = await getTransaction({ axios: this.$axios })
+        this.products = res
+      } catch (err) {
+        this.$message.error('Maaf gagal perbaharui transaksi, silahkan refresh page')
+      }
+    }
   }
 })
 </script>

@@ -7,12 +7,12 @@
       <a-breadcrumb-item>Buat</a-breadcrumb-item>
     </a-breadcrumb>
     <div :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '16px 0' }">
-      <h2>
+      <h1>
         <a-space size="middle">
-          <a-icon type="dollar" style="font-size: 20px" />
+          <a-icon type="dollar" style="font-size: 15px" />
           <span>Buat Transaksi</span>
         </a-space>
-      </h2>
+      </h1>
       <a-divider />
       <FormTransaction :model="model" />
     </div>
