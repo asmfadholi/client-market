@@ -1,22 +1,15 @@
 <template>
   <div class="container-home">
-    <a-breadcrumb style="margin: 16px 0">
-      <nuxt-link to="/product">
-        <a-breadcrumb-item>Produk</a-breadcrumb-item>
-      </nuxt-link>
-      <a-breadcrumb-item>Tambah</a-breadcrumb-item>
-    </a-breadcrumb>
-    <div :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '16px 0' }">
-      <h1>
-        <a-space size="small">
-          <a-icon type="plus-circle" style="font-size: 15px" />
+    <div>
+      <h2>
+        <a-space size="middle">
+          <a-icon type="plus-circle" style="font-size: 20px" />
           <span>Tambah Produk</span>
         </a-space>
-      </h1>
-
-      <a-divider />
-      <FormProduct :model="model" />
+      </h2>
     </div>
+    <a-divider />
+    <FormProduct :model="model" />
   </div>
 </template>
 

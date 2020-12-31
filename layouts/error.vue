@@ -31,7 +31,6 @@ export default Vue.extend({
       spiderLogo
     }
   },
-  layout: 'errlayout',
   scrollToTop: true,
   transition: 'slide-bottom'
 })

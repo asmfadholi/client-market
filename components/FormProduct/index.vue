@@ -11,30 +11,16 @@
         placeholder="Tulis Nama Produk"
       />
     </a-form-model-item>
-    <a-row>
-      <a-col :sm="24" :md="12">
-        <a-form-model-item ref="price" label="Harga / Satuan" prop="price">
-          <a-input-number
-            v-model="form.price"
-            style="width: 100%"
-            :min="0"
-            placeholder="Tulis Harga"
-            :formatter="value => `Rp. ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
-            :parser="value => value.replace('Rp. ', '').replace(/\,/g, '')"
-          />
-        </a-form-model-item>
-      </a-col>
-      <a-col :sm="24" :md="12">
-        <a-form-model-item ref="unit" label="Satuan" prop="unit">
-          <a-select v-model="form.unit" style="width: 100%">
-            <a-select-option v-for="(unit, idx) in unitOptions" :key="idx" :value="unit">
-              {{ unit }}
-            </a-select-option>
-          </a-select>
-        </a-form-model-item>
-      </a-col>
-    </a-row>
-
+    <a-form-model-item ref="price" label="Harga / satuan" prop="price">
+      <a-input-number
+        v-model="form.price"
+        style="width: 100%"
+        :min="0"
+        placeholder="Tulis Harga"
+        :formatter="value => `Rp. ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
+        :parser="value => value.replace('Rp. ', '').replace(/\,/g, '')"
+      />
+    </a-form-model-item>
     <a-form-model-item ref="image" label="Foto Produk" prop="image">
       <UploadImage @uploaded="uploaded" />
     </a-form-model-item>
@@ -52,13 +38,43 @@
         </a-button>
       </a-popconfirm>
     </a-form-model-item>
+    <a-modal
+      class="modal-style"
+      :mask-closable="false"
+      title="Latih mesin untuk mengenali produk"
+      :visible="visible"
+      @cancel="onCancel"
+    >
+      <div>
+        <qrcode-stream ref="videoStream" :style="{ display: capturing ? 'none': 'block' }" @init="onInit">
+          <div v-if="loadingInit" style="display: flex; justify-content: center; align-items: center; height: 100%">
+            <a-icon type="loading" style="font-size: 30px" />
+          </div>
+        </qrcode-stream>
+        <div v-if="capturing" :style="{ height: `${offsetVideo}px`, width: '100%', background: '#efefef' }" />
+      </div>
+
+      <div slot="footer" style="display: flex; justify-content: center">
+        <a-button size="large" :loading="loadingModel" @click="trainModel">
+          Latih ({{ countTrain }})
+        </a-button>
+      </div>
+    </a-modal>
   </a-form-model>
 </template>
 
 <script>
 import Vue from 'vue'
 import UploadImage from '@/components/UploadImage'
+import { updateModel } from '@/api/model'
 import { createProduct } from '@/api/product'
+import * as tf from '@tensorflow/tfjs'
+import * as knnClassifier from '@tensorflow-models/knn-classifier'
+import * as mobilenetModule from '@tensorflow-models/mobilenet'
+
+let net
+
+const classifier = knnClassifier.create()
 
 export default Vue.extend({
   components: {
@@ -82,29 +98,106 @@ export default Vue.extend({
       loadingForm: false,
       loadingInit: false,
       loadingModel: false,
-      unitOptions: [
-        'eceran',
-        'pack',
-        'dus'
-      ],
       form: {
         name: null,
         price: null,
-        image: null,
-        unit: 'eceran'
+        image: null
       },
       rules: {
         name: [{ required: true, message: 'Field is required', trigger: 'change' }],
         price: [{ required: true, message: 'Field is required', trigger: 'change' }],
-        unit: [{ required: true, message: 'Field is required', trigger: 'change' }]
-        // image: [{ required: true, message: 'Field is required', trigger: 'change' }]
+        image: [{ required: true, message: 'Field is required', trigger: 'change' }]
+      }
+    }
+  },
+  async created () {
+    if (process.client) {
+      const mobileNet = await mobilenetModule.load()
+      net = mobileNet
+      if (this.model) {
+        this.loadDataset()
       }
     }
   },
   methods: {
+    async onInit (promise) {
+      this.loadingInit = true
+      await promise
+      this.loadingInit = false
+      this.offsetVideo = this.$refs.videoStream.$refs.video.offsetHeight
+    },
+
+    onCancel () {
+      this.countTrain = 5
+      this.visible = false
+      this.loadingForm = false
+    },
 
     uploaded (val) {
       this.form.image = val
+    },
+
+    async trainModel () {
+      const webcamElement = this.$refs.videoStream.$refs.video
+      this.capturing = true
+      const webcam = await tf.data.webcam(webcamElement)
+      // Capture an image from the web camera.
+      const img = await webcam.capture()
+
+      // Get the intermediate activation of MobileNet 'conv_preds' and pass that
+      // to the KNN classifier.
+      const activation = net.infer(img, true)
+
+      // Pass the intermediate active
+      classifier.addExample(activation, this.form.name)
+      // Dispose the tensor to release the memory.
+      img.dispose()
+      this.checkCount()
+      this.capturing = false
+    },
+
+    checkCount () {
+      const currentCount = this.countTrain - 1
+      if (currentCount === 0) {
+        this.saveModel()
+      } else {
+        this.countTrain = currentCount
+      }
+    },
+
+    async saveModel () {
+      this.loadingModel = true
+      try {
+        const req = {
+          id: 1,
+          name: 'product',
+          model: this.saveDataSet()
+        }
+        await updateModel({
+          axios: this.$axios,
+          req
+        })
+        this.visible = false
+        this.countTrain = 5
+        this.createProduct()
+      } catch (err) {
+        this.$message.error('gagal Update model, silahkan coba lagi')
+      } finally {
+        this.loadingModel = false
+      }
+    },
+
+    saveDataSet () {
+      const str = JSON.stringify(Object.entries(classifier.getClassifierDataset()).map(([label, data]) => [label, Array.from(data.dataSync()), data.shape]))
+      // can be change to other source
+      return str
+    },
+
+    loadDataset () {
+      // can be change to other source
+      const str = this.model
+      const tensorObj = Object.fromEntries(JSON.parse(str).map(([label, data, shape]) => [label, tf.tensor(data, shape)]))
+      classifier.setClassifierDataset(tensorObj)
     },
 
     async createProduct () {
@@ -115,16 +208,9 @@ export default Vue.extend({
           axios: this.$axios,
           req
         })
-        this.loadingForm = false
-        this.$message.success('Berhasil menambah produk')
-        this.form = {
-          name: null,
-          price: null,
-          image: null,
-          unit: 'eceran'
-        }
+        this.$router.push('/product')
       } catch (err) {
-        this.$message.error('Gagal menambah produk, silahkan coba lagi')
+        this.$message.error('gagal menambah produk, silahkan coba lagi')
       } finally {
         this.loadingForm = false
       }
@@ -132,13 +218,9 @@ export default Vue.extend({
 
     generateDataProduct () {
       const formData = new FormData()
-      const { image = {}, name = '', price = 0, unit = '' } = this.form
-      const { originFileObj = '' } = image || {}
-      const newName = `${name} - ${unit}`
-      const dataBody = { name: newName, price, unit }
-      if (originFileObj) {
-        formData.append('files.image', originFileObj)
-      }
+      const { image = {}, name = '', price = 0 } = this.form
+      const dataBody = { name, price }
+      formData.append('files.image', image.originFileObj || '')
       formData.append('data', JSON.stringify(dataBody))
       return formData
     },
@@ -146,7 +228,8 @@ export default Vue.extend({
     onSubmit () {
       this.$refs.ruleForm.validate((valid) => {
         if (valid) {
-          this.createProduct()
+          this.loadingForm = true
+          this.visible = true
         } else {
           return this.$message.error('Silahkan lengkapi data terlebih dahulu')
         }

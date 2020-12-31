@@ -1,21 +1,15 @@
 <template>
   <div class="container-home">
-    <a-breadcrumb style="margin: 16px 0">
-      <nuxt-link to="/transaction">
-        <a-breadcrumb-item>Transaksi</a-breadcrumb-item>
-      </nuxt-link>
-      <a-breadcrumb-item>Buat</a-breadcrumb-item>
-    </a-breadcrumb>
-    <div :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '16px 0' }">
+    <div>
       <h2>
         <a-space size="middle">
           <a-icon type="dollar" style="font-size: 20px" />
           <span>Buat Transaksi</span>
         </a-space>
       </h2>
-      <a-divider />
-      <FormTransaction :model="model" />
     </div>
+    <a-divider />
+    <FormTransaction :model="model" />
   </div>
 </template>
 

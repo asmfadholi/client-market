@@ -1,12 +1,12 @@
 <template>
-  <div class="container-home" :style="{ padding: '24px', background: '#fff', minHeight: '100%', margin: '16px 0' }">
+  <div class="container-home">
     <div>
-      <h3>
-        <a-space size="small">
-          <a-icon type="profile" style="font-size: 15px" />
+      <h2>
+        <a-space size="middle">
+          <a-icon type="profile" style="font-size: 20px" />
           <span>Inventaris Produk</span>
         </a-space>
-      </h3>
+      </h2>
       <nuxt-link to="/product/add">
         <a-button type="primary" icon="plus-circle" size="large">
           Tambah Produk
@@ -20,12 +20,12 @@
     </div>
     <a-divider />
     <div>
-      <h3>
-        <a-space size="small">
-          <a-icon type="dollar" style="font-size: 15px" />
+      <h2>
+        <a-space size="middle">
+          <a-icon type="dollar" style="font-size: 20px" />
           <span>Transaksi</span>
         </a-space>
-      </h3>
+      </h2>
       <nuxt-link to="/transaction/add">
         <a-button type="primary" icon="plus-circle" size="large">
           Buat Transaksi
@@ -38,7 +38,7 @@
         </a-button>
       </nuxt-link>
     </div>
-    <!-- <a-divider /> -->
+    <a-divider />
   </div>
 </template>
 

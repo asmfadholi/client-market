@@ -99,9 +99,18 @@
 
 <script>
 import Vue from 'vue'
-import { getProductDetail } from '@/api/product'
+// import UploadImage from '@/components/UploadImage'
+import { updateModel } from '@/api/model'
+import { createProduct, getProductDetail } from '@/api/product'
 import { createTransaction } from '@/api/transaction'
 import TableItem from '@/components/TableItem'
+import * as tf from '@tensorflow/tfjs'
+import * as knnClassifier from '@tensorflow-models/knn-classifier'
+import * as mobilenetModule from '@tensorflow-models/mobilenet'
+
+let net
+
+const classifier = knnClassifier.create()
 
 export default Vue.extend({
   components: {
@@ -134,10 +143,27 @@ export default Vue.extend({
       form: {
         name: null,
         count: 1
+        // price: null,
+        // image: null
       },
       rules: {
         name: [{ required: true, message: 'Field is required', trigger: 'change' }]
+        // price: [{ required: true, message: 'Field is required', trigger: 'change' }],
+        // image: [{ required: true, message: 'Field is required', trigger: 'change' }]
       }
+    }
+  },
+  async created () {
+    if (process.client) {
+      const mobileNet = await mobilenetModule.load()
+      net = mobileNet
+      if (this.model) {
+        this.loadDataset()
+      }
+
+      setTimeout(() => {
+        this.showScan = true
+      }, 500)
     }
   },
   methods: {
@@ -145,6 +171,35 @@ export default Vue.extend({
       const { name = '', price = 0 } = this.currentProduct
       this.transactions.push({ productName: name, price: Number(price), count: this.form.count, __component: 'transaction.transaction' })
       this.isSetProduk = false
+    },
+    async onInit (promise) {
+      this.loadingInit = true
+      await promise
+      this.loadingInit = false
+      this.offsetVideo = this.$refs.videoStream.$refs.video.offsetHeight
+    },
+
+    async predictProduct () {
+      this.capturing = true
+      if (classifier.getNumClasses() > 0) {
+        const webcamElement = this.$refs.videoStream.$refs.video
+        const webcam = await tf.data.webcam(webcamElement)
+        const img = await webcam.capture()
+        console.log(img)
+
+        // Get the activation from mobilenet from the webcam.
+        const activation = net.infer(img, 'conv_preds')
+        // Get the most likely class and confidence from the classifier module.
+        const result = await classifier.predictClass(activation)
+        this.capturing = false
+
+        if (result.confidences[result.label] > 0.8) {
+          await this.doGetProduct(result.label)
+        }
+
+        // Dispose the tensor to release the memory.
+        img.dispose()
+      }
     },
 
     async doGetProduct (val) {
@@ -185,12 +240,89 @@ export default Vue.extend({
       this.loadingForm = false
     },
 
+    uploaded (val) {
+      this.form.image = val
+    },
+
+    async trainModel () {
+      const webcamElement = this.$refs.videoStream.$refs.video
+      this.capturing = true
+      const webcam = await tf.data.webcam(webcamElement)
+      // Capture an image from the web camera.
+      const img = await webcam.capture()
+
+      // Get the intermediate activation of MobileNet 'conv_preds' and pass that
+      // to the KNN classifier.
+      const activation = net.infer(img, true)
+
+      // Pass the intermediate active
+      classifier.addExample(activation, this.form.name)
+      // Dispose the tensor to release the memory.
+      img.dispose()
+      this.checkCount()
+      this.capturing = false
+    },
+
     checkCount () {
       const currentCount = this.countTrain - 1
       if (currentCount === 0) {
         this.saveModel()
       } else {
         this.countTrain = currentCount
+      }
+    },
+
+    async saveModel () {
+      this.loadingModel = true
+      try {
+        const req = {
+          id: 1,
+          name: 'product',
+          model: this.saveDataSet()
+        }
+        await updateModel({
+          axios: this.$axios,
+          req
+        })
+        this.visible = false
+        this.countTrain = 5
+        this.createProduct()
+      } catch (err) {
+        this.$message.error('gagal Update model, silahkan coba lagi')
+      } finally {
+        this.loadingModel = false
+      }
+    },
+
+    saveDataSet () {
+      const str = JSON.stringify(Object.entries(classifier.getClassifierDataset()).map(([label, data]) => [label, Array.from(data.dataSync()), data.shape]))
+      // can be change to other source
+      return str
+    },
+
+    async loadDataset () {
+      // can be change to other source
+      const str = this.model
+      const tensorObj = Object.fromEntries(JSON.parse(str).map(([label, data, shape]) => [label, tf.tensor(data, shape)]))
+      classifier.setClassifierDataset(tensorObj)
+      // const model = await classifier.getClassifierDataset()
+      const model = await Object.entries(classifier.getClassifierDataset()).map(([label, data]) => [label, Array.from(data.dataSync()), data.shape])
+      model.save('localstorage://my-model-1')
+    },
+
+    async createProduct () {
+      this.loadingForm = true
+      const req = this.generateDataProduct()
+      try {
+        await createProduct({
+          axios: this.$axios,
+          req
+        })
+        this.$router.push('/product')
+      } catch (err) {
+        this.$message.error('gagal menambah produk, silahkan coba lagi')
+      } finally {
+        this.loadingForm = false
       }
     },
 
@@ -230,7 +362,7 @@ export default Vue.extend({
           this.loadingForm = true
           if (this.transactions.length === 0) {
             this.loadingForm = false
-            return this.$message.error('Tidak ada produk yang di beli, silahkan tambahkan produk')
+            return this.$message.error('Tidak ada produk yang di beli, silahkan scan terlebih dahulu')
           }
           this.doCreateTransaction()
         } else {

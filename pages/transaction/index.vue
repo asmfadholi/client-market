@@ -1,14 +1,13 @@
 <template>
-  <div class="container-product" :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '16px 0' }">
+  <div class="container-product">
     <div>
-      <h1>
-        <a-space size="small">
-          <a-icon type="ordered-list" style="font-size: 15px" />
+      <h2>
+        <a-space size="middle">
+          <a-icon type="ordered-list" style="font-size: 20px" />
           <span>List Transaksi</span>
         </a-space>
-      </h1>
+      </h2>
     </div>
-    <a-divider />
     <div style="display: flex; justify-content: flex-end; margin: 20px 0px">
       <nuxt-link to="/transaction/add">
         <a-button type="primary" icon="plus-circle" size="default">

@@ -2,8 +2,8 @@
   <a-layout id="components-layout-demo-side" style="min-height: 100vh">
     <a-layout-sider v-model="collapsed" theme="dark" collapsible :style="{ position: isClient ? 'relative' : 'fixed', top: '0px', left: '0px', minHeight: '100vh'}">
       <div class="logo" />
-      <a-menu theme="dark" :default-selected-keys="currentNavigation" mode="inline">
-        <a-menu-item key="home">
+      <a-menu theme="dark" :default-selected-keys="['1']" mode="inline">
+        <a-menu-item key="1">
           <nuxt-link to="/">
             <div>
               <a-icon type="desktop" />
@@ -12,7 +12,7 @@
           </nuxt-link>
         </a-menu-item>
 
-        <a-menu-item key="product">
+        <a-menu-item key="2">
           <nuxt-link to="/product">
             <div>
               <a-icon type="profile" />
@@ -20,7 +20,7 @@
             </div>
           </nuxt-link>
         </a-menu-item>
-        <a-menu-item key="transaction">
+        <a-menu-item key="3">
           <nuxt-link to="/transaction">
             <div>
               <a-icon type="dollar" />
@@ -33,13 +33,29 @@
     <a-layout :style="{ position: 'relative', marginLeft: isClient ? '0px' : '200px'}">
       <a-layout-header style="background: #fff; padding: 0" />
       <a-layout-content style="margin: 0 16px">
-        <Nuxt />
+        <a-breadcrumb style="margin: 16px 0">
+          <a-breadcrumb-item>User</a-breadcrumb-item>
+          <a-breadcrumb-item>Bill</a-breadcrumb-item>
+        </a-breadcrumb>
+        <div :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '16px 0' }">
+          <Nuxt />
+        </div>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
         Ant Design ©2018 Created by Ant UED
       </a-layout-footer>
     </a-layout>
   </a-layout>
+  <!-- <a-layout-content class="content-layout-default">
+    <a-layout style="padding: 24px 0; background: #fff; margin: 16px 0; max-width: 1400px; width: 100%">
+      <a-layout-content :style="{ padding: '0 24px', minHeight: '280px' }">
+        <Nuxt />
+      </a-layout-content>
+    </a-layout>
+  </a-layout-content>
+  <a-layout-footer style="text-align: center">
+    VMS ©2020
+  </a-layout-footer> -->
 </template>
 
 <script>
@@ -55,14 +71,6 @@ export default Vue.extend({
       isClient: false,
       show: false,
       collapsed: false
-    }
-  },
-  computed: {
-    currentNavigation () {
-      const { path = '' } = this.$route
-      if (path.includes('product')) { return ['product'] }
-      if (path.includes('transaction')) { return ['transaction'] }
-      return ['home']
     }
   },
   mounted () {

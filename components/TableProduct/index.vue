@@ -3,26 +3,20 @@
     <span slot="image" slot-scope="image">
       <image v-lazy="image" />
     </span>
-    <div slot="price" slot-scope="price" style="text-align: right">
-      {{ `${price}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') }}
-    </div>
+    <span slot="price" slot-scope="price">
+      {{ `Rp. ${price}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') }}
+    </span>
     <span
       slot="action"
       slot-scope="action, row"
       style="display: flex; justify-content: center; cursor: pointer; font-size: 20px"
     >
-      <a-space size="middle">
-        <nuxt-link :to="`/product/${row.id}`">
-          <a-icon type="form" style="color: #1890ff; font-size: 15px" />
-        </nuxt-link>
-        <a-popconfirm placement="topLeft" ok-text="Yes" cancel-text="No" @confirm="confirm(row)">
-          <template slot="title">
-            <p>Apa kamu yakin ingin delete produk ini?</p>
-          </template>
-          <a-icon type="delete" style="color: red; font-size: 15px" />
-        </a-popconfirm>
-      </a-space>
-
+      <a-popconfirm placement="topLeft" ok-text="Yes" cancel-text="No" @confirm="confirm(row)">
+        <template slot="title">
+          <p>Apa kamu yakin ingin delete produk ini?</p>
+        </template>
+        <a-icon type="close-circle" style="color: red" />
+      </a-popconfirm>
     </span>
   </a-table>
 </template>
@@ -49,7 +43,7 @@ const columns = [
     key: 'image'
   },
   {
-    title: 'Harga (Rp)',
+    title: 'Harga',
     dataIndex: 'price',
     scopedSlots: { customRender: 'price' },
     key: 'price'
