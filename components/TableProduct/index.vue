@@ -40,6 +40,7 @@ const columns = [
     title: 'Nama Produk',
     dataIndex: 'uniqueName',
     key: 'name',
+    width: '130px',
     fixed: 'left'
   },
   {

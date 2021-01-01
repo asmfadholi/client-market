@@ -1,9 +1,14 @@
 <template>
   <div class="container-home">
     <a-breadcrumb style="margin: 16px 0">
-      <nuxt-link to="/product">
-        <a-breadcrumb-item>Produk</a-breadcrumb-item>
-      </nuxt-link>
+      <a-breadcrumb-item>
+        <nuxt-link to="/product">
+          <span>
+            Produk
+          </span>
+        </nuxt-link>
+      </a-breadcrumb-item>
+
       <a-breadcrumb-item>Tambah</a-breadcrumb-item>
     </a-breadcrumb>
     <div :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '16px 0' }">

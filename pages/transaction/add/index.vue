@@ -28,11 +28,12 @@ export default Vue.extend({
   components: {
     FormTransaction
   },
-  async asyncData ({ $axios, redirect }) {
+  async asyncData ({ $axios, redirect, context }) {
     try {
       const req = {
         name: 'product'
       }
+      console.log(context)
       const [res = {}] = await detailModel({ axios: $axios, req })
       const { model = null } = res
       return { model: model || null }

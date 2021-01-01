@@ -19,12 +19,12 @@
               type="danger"
               shape="circle"
               icon="minus"
-              size="medium"
+              size="default"
               :disabled="count === 1"
               @click="count--"
             />
             <span>{{ count }}</span>
-            <a-button type="primary" shape="circle" icon="plus" size="medium" @click="count++" />
+            <a-button type="primary" shape="circle" icon="plus" size="default" @click="count++" />
           </a-space>
         </div>
         <div class="add-product">
@@ -54,7 +54,7 @@
               </a-select>
             </a-col>
             <a-col :sm="24" :md="4">
-              <a-button type="primary" size="medium" style="margin: 0px; width: 100%; height: 60px" @click="addProduct">
+              <a-button type="primary" size="default" style="margin: 0px; width: 100%; height: 60px" @click="addProduct">
                 Add
               </a-button>
             </a-col>
@@ -140,6 +140,7 @@ export default Vue.extend({
   },
   methods: {
     addProduct () {
+      if (!this.search) { return }
       const { name = '', price = 0 } = JSON.parse(this.search) || {}
       this.transactions.push({ productName: name, price: Number(price), count: this.count, __component: 'transaction.transaction' })
       this.search = ''
