@@ -71,7 +71,7 @@
 
     <a-layout :style="{ position: 'relative', marginLeft: isClient ? '0px' : !isMobile ? '200px' : '0px'}">
       <a-layout-header style="background: #fff; padding: 0 16px">
-        <a-icon type="menu" style="font-size: 20px; cursor: pointer" @click="visibleDrawer = true" />
+        <a-icon v-if="isMobile" type="menu" style="font-size: 20px; cursor: pointer" @click="visibleDrawer = true" />
       </a-layout-header>
       <a-layout-content style="margin: 0 16px; min-height: calc(100vh + 64px)">
         <Nuxt />
