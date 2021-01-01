@@ -262,6 +262,7 @@ export default Vue.extend({
 
     resetForm () {
       this.$refs.ruleForm.resetFields()
+      this.transactions = []
     }
   }
 })
