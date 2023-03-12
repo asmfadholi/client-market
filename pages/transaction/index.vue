@@ -32,7 +32,8 @@ export default Vue.extend({
   async asyncData ({ $axios, redirect }) {
     try {
       const res = await getTransaction({ axios: $axios })
-      return { transactionList: res || [] }
+      const normData = (res?.data || []).map(each => ({ ...each.attributes, id: each.id }))
+      return { transactionList: normData }
     } catch (err) {
       redirect('/sorry')
     }

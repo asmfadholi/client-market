@@ -33,7 +33,8 @@ export default Vue.extend({
       const req = {
         name: 'product'
       }
-      const [res = {}] = await detailModel({ axios: $axios, req })
+      const response = await detailModel({ axios: $axios, req })
+      const [res = {}] = (response?.data || []).map(each => ({ ...each.attributes, id: each.id }))
       const { model = null } = res
       return { model: model || null }
     } catch (err) {

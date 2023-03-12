@@ -56,7 +56,8 @@ export default Vue.extend({
   async asyncData ({ $axios, redirect }) {
     try {
       const res = await getProduct({ axios: $axios })
-      return { productList: res || [] }
+      const normData = (res?.data || []).map(each => ({ ...each.attributes, id: each.id }))
+      return { productList: normData }
     } catch (err) {
       redirect('/sorry')
     }
@@ -84,7 +85,8 @@ export default Vue.extend({
     async onDeleted () {
       try {
         const res = await getProduct({ axios: this.$axios })
-        this.products = res
+        const normData = (res?.data || []).map(each => ({ ...each.attributes, id: each.id }))
+        this.products = normData
       } catch (err) {
         this.$message.error('Maaf gagal perbaharui produk, silahkan refresh page')
       }
@@ -97,9 +99,10 @@ export default Vue.extend({
       let products = []
       try {
         this.$refs.tableProduct.setLoading(true)
-        const req = { uniqueName_contains: this.search }
+        const req = { 'filters[uniqueName][$containsi]': this.search }
         const res = await getProductByFilter({ axios: this.$axios, req })
-        products = res
+        const normData = (res?.data || []).map(each => ({ ...each.attributes, id: each.id }))
+        products = normData
       } catch (err) {
         this.$message.error('Maaf gagal perbaharui produk, silahkan refresh page')
       } finally {

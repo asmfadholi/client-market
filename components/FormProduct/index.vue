@@ -92,7 +92,8 @@ export default Vue.extend({
       unitOptions: [
         'eceran',
         'pack',
-        'dus'
+        'dus',
+        'renteng'
       ],
       form: {
         name: null,
@@ -180,10 +181,10 @@ export default Vue.extend({
 
     generateDataProduct () {
       const formData = new FormData()
-      const { image = {}, name = '', price = 0, unit = '', id = null } = this.form
+      const { image = {}, name = '', price = 0, unit = '' } = this.form
       const { originFileObj = '' } = image || {}
       const uniqueName = `${name} - ${unit}`
-      const dataBody = { name, price, unit, uniqueName, id }
+      const dataBody = { name, price, unit, uniqueName }
       if (originFileObj) {
         formData.append('files.image', originFileObj)
       }

@@ -159,9 +159,10 @@ export default Vue.extend({
     async doSearch () {
       // let products = []
       try {
-        const req = { uniqueName_contains: this.querySearch, _limit: 20 }
+        const req = { 'filters[uniqueName][$containsi]': this.querySearch, _limit: 20 }
         const res = await getProductByFilter({ axios: this.$axios, req })
-        this.productOptions = res
+        const normData = (res?.data || []).map(each => ({ ...each.attributes, id: each.id }))
+        this.productOptions = normData
         // products = res
       } catch (err) {
         this.$message.error('Maaf gagal perbaharui produk, silahkan refresh page')
